@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CFG Lab — Context-Free Grammar Simplifier</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="app-container">
+
+  <!-- ── Sidebar ── -->
+  <aside class="app-sidebar">
+    <div class="logo"><span class="logo-bracket">[</span>CFG<span class="logo-accent">Simplifier</span><span class="logo-bracket">]</span></div>
+    <nav class="main-nav">
+      <button class="nav-btn active" data-tab="simplifier">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+        Simplifier
+      </button>
+      <button class="nav-btn" data-tab="stepwise">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        Step-by-Step
+      </button>
+      <button class="nav-btn" data-tab="checker">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        Grammar Checker
+      </button>
+      <button class="nav-btn" data-tab="reference">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        Reference
+      </button>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="author-name">Harehar Seth</div>
+      <div class="author-id">2024UCM2340</div>
+    </div>
+  </aside>
+
+  <!-- ── Main ── -->
+  <div class="app-main-wrapper">
+    <main class="main-content">
+
+      <!-- ════ SIMPLIFIER ════ -->
+      <section id="tab-simplifier" class="tab-section active">
+        <div class="section-hero">
+          <h1 class="section-title">CFG Simplifier</h1>
+          <p class="section-desc">Enter a grammar and run all three simplification passes in one click. Each stage shows an animated dependency graph.</p>
+        </div>
+        <div class="simplifier-layout">
+          <div class="input-col">
+            <div class="field-wrap">
+              <label class="field-label">Start Symbol <span class="field-hint">e.g. S</span></label>
+              <input id="start-sym" class="text-input mono" type="text" value="S" maxlength="4" style="width:80px;" placeholder="S"/>
+            </div>
+            <div class="field-wrap" style="margin-top:1.2rem;">
+              <label class="field-label">Productions <span class="field-hint">— one per line: A → α | β</span></label>
+              <textarea id="grammar-input" class="grammar-textarea" spellcheck="false" placeholder="S → A B | B C&#10;A → B A | a&#10;...">S → A B | B C
+A → B A | a
+B → C C | b
+C → A B | ε
+D → a b</textarea>
+            </div>
+            <div class="sym-insert-bar" data-target="grammar-input">
+              <span class="sym-bar-label">Insert</span>
+              <button class="sym-btn" data-insert="ε">ε</button>
+              <button class="sym-btn" data-insert="→">→</button>
+              <button class="sym-btn" data-insert=" | "> | </button>
+              <button class="sym-btn" data-insert="eps">eps</button>
+            </div>
+            <div class="presets-row">
+              <span class="field-label" style="margin-bottom:0">Examples</span>
+              <button class="snippet-btn" data-preset="null">Nullable</button>
+              <button class="snippet-btn" data-preset="unit">Unit prods</button>
+              <button class="snippet-btn" data-preset="useless">Useless syms</button>
+              <button class="snippet-btn" data-preset="complex">Complex</button>
+              <button class="snippet-btn" data-preset="chomsky">Near-CNF</button>
+            </div>
+            <div class="input-format-reminder"><strong>Format:</strong> LHS must be <code>UPPERCASE</code>. Use <code>→</code> or <code>-></code>. Alternatives with <code>|</code>. Empty string: <code>ε</code> or <code>eps</code>.</div>
+            <div class="action-row">
+              <button class="primary-btn" onclick="runSimplification()">Simplify Grammar</button>
+              <button class="secondary-btn" onclick="clearAll()">Clear</button>
+            </div>
+            <div id="input-error" style="display:none" class="parse-error"></div>
+          </div>
+          <div class="results-col" id="results-col">
+            <div class="results-placeholder">
+              <div class="placeholder-icon">G</div>
+              <div class="placeholder-title">Results will appear here</div>
+              <div class="placeholder-sub">Enter a grammar and click Simplify</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ════ STEP-BY-STEP (Theatre) ════ -->
+      <section id="tab-stepwise" class="tab-section">
+        <div class="theatre-layout">
+
+          <!-- Left: Input + Controls -->
+          <div class="theatre-sidebar">
+            <div class="theatre-sidebar-inner">
+              <div class="theatre-title">Step-by-Step</div>
+              <div class="field-wrap">
+                <label class="field-label">Start <span class="field-hint">uppercase</span></label>
+                <input id="step-start" class="text-input mono" type="text" value="S" maxlength="4" style="width:72px;"/>
+              </div>
+              <div class="field-wrap" style="margin-top:.8rem;">
+                <label class="field-label">Grammar</label>
+                <textarea id="step-grammar" class="grammar-textarea short" spellcheck="false">S → A B | B C
+A → B A | a
+B → C C | b
+C → A B | ε
+D → a b</textarea>
+              </div>
+              <div class="sym-insert-bar" data-target="step-grammar">
+                <span class="sym-bar-label">Insert</span>
+                <button class="sym-btn" data-insert="ε">ε</button>
+                <button class="sym-btn" data-insert="→">→</button>
+                <button class="sym-btn" data-insert=" | "> | </button>
+              </div>
+              <button class="primary-btn" style="width:100%;margin-top:.8rem" onclick="initStepwise()">▶ Load &amp; Begin</button>
+
+              <!-- Step nav — always visible -->
+              <div id="step-nav" style="display:none">
+                <!-- Progress bar -->
+                <div class="progress-track"><div class="progress-fill" id="step-progress-bar"></div></div>
+                <!-- Dot track (clickable) -->
+                <div class="step-dots-row" id="step-dots"></div>
+                <!-- Counter + phase -->
+                <div class="step-meta-row">
+                  <span class="step-counter" id="step-counter">1 / 9</span>
+                  <span class="phase-badge" id="step-phase-badge">Input</span>
+                </div>
+                <!-- Big nav buttons -->
+                <div class="theatre-nav-btns">
+                  <button class="tnav-btn" id="btn-prev" onclick="prevStep()" title="← Arrow key">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+                    Prev
+                  </button>
+                  <button class="tnav-btn tnav-play" id="btn-play" onclick="togglePlay()">
+                    <span class="btn-icon">▶</span>Play
+                  </button>
+                  <button class="tnav-btn" id="btn-next" onclick="nextStep()" title="→ Arrow key">
+                    Next
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+                  </button>
+                </div>
+                <button class="tnav-replay" onclick="replaySteps()">↺ Replay from Start</button>
+                <div class="kbd-hint"><kbd>←</kbd><kbd>→</kbd> navigate &nbsp;·&nbsp; <kbd>Space</kbd> play &nbsp;·&nbsp; <kbd>R</kbd> replay</div>
+                <div class="kbd-hint" style="margin-top:4px"><kbd>1</kbd> Reason &nbsp;<kbd>2</kbd> Grammar &nbsp;<kbd>3</kbd> Changes</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: Theatre Stage -->
+          <div class="theatre-stage" id="step-view">
+            <!-- Placeholder -->
+            <div class="results-placeholder" style="height:100%">
+              <div class="placeholder-icon">→</div>
+              <div class="placeholder-title">Load a grammar to begin</div>
+              <div class="placeholder-sub">The animated step-by-step walkthrough will appear here</div>
+            </div>
+          </div>
+
+        </div><!-- /theatre-layout -->
+
+        <!-- Theatre Stage (populated by JS) is a fixed container -->
+        <!-- Real stage: graph on top, tabbed panels on bottom -->
+        <template id="theatre-stage-tpl">
+          <div class="ts-graph-area" id="theatre-graph"><!-- dep graph here --></div>
+          <div class="ts-panel-area">
+            <div class="ts-panel-tabs">
+              <button class="ptab active" id="ptab-reason" onclick="activatePanelTab('reason')">💡 Why?</button>
+              <button class="ptab" id="ptab-grammar" onclick="activatePanelTab('grammar')">📋 Grammar</button>
+              <button class="ptab" id="ptab-changes" onclick="activatePanelTab('changes')">✏️ Changes</button>
+            </div>
+            <div class="ts-panel-content">
+              <div class="ts-panel" id="panel-reason"></div>
+              <div class="ts-panel" id="panel-grammar" style="display:none"></div>
+              <div class="ts-panel" id="panel-changes" style="display:none"></div>
+            </div>
+          </div>
+        </template>
+      </section>
+
+      <!-- ════ CHECKER ════ -->
+      <section id="tab-checker" class="tab-section">
+        <div class="section-hero">
+          <h1 class="section-title">Grammar Checker</h1>
+          <p class="section-desc">Inspect nullable variables, unit pairs, generating/reachable symbols, and CNF compliance.</p>
+        </div>
+        <div class="checker-layout">
+          <div class="checker-input-col">
+            <div class="field-wrap">
+              <label class="field-label">Start Symbol</label>
+              <input id="chk-start" class="text-input mono" type="text" value="S" maxlength="4" style="width:80px;"/>
+            </div>
+            <div class="field-wrap" style="margin-top:1rem;">
+              <label class="field-label">Grammar</label>
+              <textarea id="chk-grammar" class="grammar-textarea" spellcheck="false">S → A B | B C
+A → B A | a
+B → C C | b
+C → A B | ε
+D → a b</textarea>
+            </div>
+            <div class="sym-insert-bar" data-target="chk-grammar">
+              <span class="sym-bar-label">Insert</span>
+              <button class="sym-btn" data-insert="ε">ε</button>
+              <button class="sym-btn" data-insert="→">→</button>
+              <button class="sym-btn" data-insert=" | "> | </button>
+            </div>
+            <div class="input-format-reminder"><strong>Format:</strong> <code>A → B C | a</code>. One rule per line. NTs are UPPERCASE.</div>
+            <button class="primary-btn" style="margin-top:1rem" onclick="runChecker()">Analyse Grammar</button>
+          </div>
+          <div class="checker-results-col" id="checker-results">
+            <div class="results-placeholder">
+              <div class="placeholder-icon">?</div>
+              <div class="placeholder-title">Analysis will appear here</div>
+              <div class="placeholder-sub">Enter a grammar and click Analyse</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ════ REFERENCE ════ -->
+      <section id="tab-reference" class="tab-section">
+        <div class="section-hero">
+          <h1 class="section-title">Reference</h1>
+          <p class="section-desc">Formal definitions, algorithms, and input format guide.</p>
+        </div>
+        <div class="ref-layout">
+          <div class="ref-col">
+            <h2 class="ref-heading">Input Format</h2>
+            <div class="ref-box">
+              <p>One production per line. Use <code>→</code> or <code>-></code> as the arrow. Separate alternatives with <code>|</code>. Use <code>ε</code> or <code>eps</code> for the empty string.</p>
+              <pre class="code-block">S → A B | a
+A → B B | ε
+B → b</pre>
+              <p style="margin-top:.75rem">Uppercase = Non-terminals. Lowercase = Terminals.</p>
+              <p style="margin-top:.75rem;color:var(--amber)">⚠️ Start symbol must appear as LHS of at least one rule.</p>
+            </div>
+            <h2 class="ref-heading" style="margin-top:2rem">Simplification Steps</h2>
+            <div class="pipeline">
+              <div class="pipe-step"><div class="pipe-num">1</div><div class="pipe-body"><div class="pipe-title">Remove Null Productions</div><div class="pipe-desc">Find nullable variables (A ⇒* ε). For each production containing a nullable variable, generate all "with/without" combinations. Remove all A→ε rules (keep S→ε if S is nullable).</div></div></div>
+              <div class="pipe-arrow">↓</div>
+              <div class="pipe-step"><div class="pipe-num">2</div><div class="pipe-body"><div class="pipe-title">Remove Useless Symbols</div><div class="pipe-desc">A symbol is useful only if it is both <em>generating</em> (can derive terminals) and <em>reachable</em> (accessible from start). Remove non-generating first, then unreachable.</div></div></div>
+              <div class="pipe-arrow">↓</div>
+              <div class="pipe-step"><div class="pipe-num">3</div><div class="pipe-body"><div class="pipe-title">Remove Unit Productions</div><div class="pipe-desc">Compute the unit closure: all (A,B) pairs where A⇒*B via unit steps. For each pair, copy non-unit rules of B into A. Delete all unit rules.</div></div></div>
+            </div>
+          </div>
+          <div class="ref-col">
+            <h2 class="ref-heading">Formal Definitions</h2>
+            <table class="ref-table">
+              <thead><tr><th>Term</th><th>Definition</th></tr></thead>
+              <tbody>
+                <tr><td><strong>CFG</strong></td><td>4-tuple (V, Σ, R, S)</td></tr>
+                <tr><td><strong>Nullable</strong></td><td>A ⇒* ε</td></tr>
+                <tr><td><strong>Generating</strong></td><td>A ⇒* w ∈ Σ*</td></tr>
+                <tr><td><strong>Reachable</strong></td><td>S ⇒* αAβ</td></tr>
+                <tr><td><strong>Useful</strong></td><td>Generating and reachable</td></tr>
+                <tr><td><strong>Unit pair</strong></td><td>(A,B): A ⇒* B via units</td></tr>
+                <tr><td><strong>CNF</strong></td><td>A→BC or A→a (or S→ε)</td></tr>
+              </tbody>
+            </table>
+            <h2 class="ref-heading" style="margin-top:2rem">Properties Preserved</h2>
+            <table class="ref-table">
+              <thead><tr><th>Operation</th><th>Language preserved?</th></tr></thead>
+              <tbody>
+                <tr><td>Remove null productions</td><td><span class="badge-amber">Yes (except ε)</span></td></tr>
+                <tr><td>Remove useless symbols</td><td><span class="badge-green">Yes</span></td></tr>
+                <tr><td>Remove unit productions</td><td><span class="badge-green">Yes</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div><!-- /app-main-wrapper -->
+</div><!-- /app-container -->
+
+<script src="engine.js"></script>
+<script src="app.js"></script>
+<script>
+// Wire up theatre template once DOM is ready
+(function() {
+  const origInit = window.initStepwise;
+  window.initStepwise = function() {
+    // Replace step-view with the real theatre stage (from template) on first load
+    const sv = document.getElementById('step-view');
+    const tpl = document.getElementById('theatre-stage-tpl');
+    if (tpl && sv && !sv.querySelector('.ts-graph-area')) {
+      sv.innerHTML = '';
+      sv.appendChild(tpl.content.cloneNode(true));
+      sv.classList.add('theatre-stage-active');
+    }
+    origInit();
+  };
+})();
+</script>
+</body>
+</html>
